@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <h1>Login</h1>
+  <form>
+    <div><input type="text" name="username" required /></div>
+    <div><input type="password" name="password" required /></div>
+    <div><input type="submit" value="Login Button"></div>
+  </form>
+
+  <script>
+    const form = document.querySelector('form')
+    form.addEventListener('submit', e => {
+      e.preventDefault()
+      const formdata = new FormData(form)
+      axios({
+        url: '/api/token/',
+        method: 'post',
+        data: formdata,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      }).then(res => {
+        localStorage.setItem('refreshToken', res.data.refresh)
+        location.href = '/views_articles/'
+      }).catch(reason => {
+      })
+    })
+  </script>
+</body>
+
+</html>
