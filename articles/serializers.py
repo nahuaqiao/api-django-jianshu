@@ -10,34 +10,27 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
 
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['id', 'content',  'created']
+
+
 class ArticleSerializer(serializers.ModelSerializer):
    
-    user = serializers.ReadOnlyField(source='owner.username')
-    comments = serializers.SlugRelatedField(many=True, read_only=True, slug_field='content')
+    user = serializers.ReadOnlyField(source='user.username')
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Article
         fields = ['id', 'title', 'content','cover', 'created', 'user', 'comments']
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    
-    article = serializers.ReadOnlyField(source='article.title')
-    user = serializers.ReadOnlyField(source='owner.username')
-
-    class Meta:
-        model = Comment
-        fields = ['id', 'content', 'article', 'user', 'created']
-
-
 class UserSerializer(serializers.ModelSerializer):
-#    articles = serializers.PrimaryKeyRelatedField(many=True, queryset=Article.objects.all())
-#    comments = serializers.PrimaryKeyRelatedField(many=True, queryset=Comment.objects.all())
     
     class Meta:
         model = User
-#        fields = ['id', 'username', 'email', 'password']
-        fields = ['id', 'username']
+        fields = ['id', 'username', 'email', 'password']
 
 """
 class RegisterSerializer(serializers.ModelSerializer):

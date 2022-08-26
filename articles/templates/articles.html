@@ -5,8 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-
+  <title>Articles</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous" />
 
@@ -15,54 +14,102 @@
     crossorigin="anonymous"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script>
-    async function getJWT() {
-      const refreshToken = localStorage.refreshToken
-      if (refreshToken == undefined) {
-        location.href = '/'
+
+</head>
+
+<!-- --------------------------------------------------------------------------------------------- -->
+
+<body>
+  <nav class='navbar bg-light'>
+    <div class='container-fluid'>
+      <a class='navbar-brand' href="{% url 'views_articles' %}">Index Page</a>
+      <span class="">SHUJIAN</span>
+      <div id=" auth-group" class="btn-group">
+        <a href="{% url 'views_post_article' %}" id="post-article" class="btn btn-primary active">Post
+          Article</a>
+      </div>
+    </div>
+  </nav>
+  <main>
+    <div id="articles_container"></div>
+  </main>
+</body>
+
+<!-- --------------------------------------------------------------------------------------------- -->
+
+<script>
+  const axiosWithAccessToken = async (url, method, access_token, data = {}) => {
+    const res = await axios({
+      url,
+      method,
+      header: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json'
+      },
+    })
+  }
+
+  const isTokenExpired = async (token) => {
+    try {
+      const res = await axios({
+        url: '{% url "token_verify" %}',
+        method: 'post',
+        data: { token }
+      })
+      if (res.status === 200) {
+        return false
       } else {
-        try {
-          const res = await axios({
-            url: '/api/token/verify/',
-            method: 'post',
-            data: { token: refreshToken },
-          })
-          const access_res = await axios({
-            url: '/api/token/refresh/',
-            method: 'post',
-            data: { refresh: refreshToken }
-          })
-          return access_res.data.access
-        } catch (exception) {
-          console.log(exception)
+        return true
+      }
+    } catch (ignore) {
+      return true
+    }
+  }
+
+  const refreshAccessToken = async (refresh) => {
+    const accessRes = await axios({
+      url: '{% url "token_refresh" %}',
+      method: 'post',
+      data: { refresh }
+    })
+    return accessRes.access
+  }
+
+  const getAccessToken = async () => {
+    if (!!localStorage.access) {
+      const accessIsExpired = await isTokenExpired(localStorage.access)
+      console.log('accessIsExpired', accessIsExpired)
+      if (!accessIsExpired) {
+        return localStorage.access
+      } else {
+        if (!!localStorage.refresh) {
+          const refreshIsExpired = await isTokenExpired(localStorage.refresh)
+          console.log('refreshIsExpired', refreshIsExpired)
+          if (!refreshIsExpired) {
+            return refreshAccessToken(localStorage.refresh)
+          }
+        } else {
+          location.href = '{% url "views_login" %}'
         }
       }
+    } else {
+      location.href = '{% url "views_login" %}'
     }
-  </script>
+  }
 
-  <script>
-    (async function () {
-      const access = await getJWT()
-      const articles_res = await axios({
-        method: "get",
-        url: '/articles/',
-        headers: {
-          'Authorization': `Bearer ${access}`
-        }
-      })
+  const getArticles = async () => {
+    const articles_res = await axios('{% url "article-list" %}')
+    return articles_res.data
+  }
 
+  const render_articles = (articles) => {
+    const articles_container = document.querySelector('#articles_container')
 
-      console.log(articles_res)
-
-
-
-      const articles_container = document.querySelector('#articles-container')
-
-      articles_res.data.forEach((article) => {
-        articles_container.innerHTML = `
+    articles.forEach((article) => {
+      articles_container.innerHTML = `
         <div class="card shadow-sm" data-id='${article.id}'>
           <div class="card-body">
-            <a href='/articles/views/${article.id}/'><h5>${article.title}</h5></a>
+            <a href='/views/articles/${article.id}/'><h5>${article.title}</h5></a>
             <p class="card-text text-muted">${article.content}</p>
             <div class="d-flex justify-content-between align-items-center">
               <small class="text-muted">created: ${article.created.substring(0, article.created.indexOf('T'))}</small>
@@ -70,25 +117,15 @@
             </div >
           </div >
         </div >` + articles_container.innerHTML
-      })
-    })()
-  </script>
-</head>
+    })
+  }
 
-<body>
-  <nav class='navbar bg-light'>
-    <div class='container-fluid'>
-      <a class='navbar-brand' href='/articles/views/index/'>Index Page</a>
-      <div id="auth-group" class="btn-group">
-        <a href="/views_post_articles/" id='post-article' class="btn btn-primary active" aria-current="page">Post
-          Article</a>
-      </div>
-    </div>
-  </nav>
-  <main class='container-sm'>
-    <article id='articles-container'></article>
-  </main>
+  const main = async () => {
+    const articles = await getArticles()
+    render_articles(articles)
+  }
 
-</body>
+  main()
+</script>
 
 </html>

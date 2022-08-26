@@ -7,7 +7,7 @@ class Article(models.Model):
     content = models.TextField()
     cover = models.ImageField(upload_to='upload')
     user = models.ForeignKey('auth.User', related_name='articles', on_delete=models.CASCADE)
-    
+
     class Meta:
         ordering = ['created']
 
@@ -16,7 +16,7 @@ class Comment(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     content = models.TextField()
     user = models.ForeignKey('auth.User', related_name='comments', on_delete=models.CASCADE)
-    article = models.ForeignKey(Article, related_name='comments', on_delete=models.CASCADE)
+    article = models.ForeignKey('articles.Article', related_name='comments', on_delete=models.CASCADE)
 
 
     class Meta:
