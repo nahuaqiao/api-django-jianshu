@@ -71,7 +71,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         _serializer = self.serializer_class(data=data)
         if _serializer.is_valid():
             _serializer.save(user=User.objects.get(pk=self.request.user.id), article=Article.objects.get(pk=article_id))
-        print(_serializer.data)
         return Response(data=_serializer.data, status=status.HTTP_201_CREATED)
 
     def list(self, request, article_id=None):

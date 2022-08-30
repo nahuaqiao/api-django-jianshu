@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Articles</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous" />
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+    crossorigin="anonymous"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    #post-form {
+      width: 40%;
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
+
+    #post-form input[type="email"] {
+      margin-bottom: -1px;
+      border-bottom-right-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    #post-form input[type="password"] {
+      margin-bottom: 10px;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+  </style>
+</head>
+
+<!-- --------------------------------------------------------------------------------------------- -->
+
+<body>
+  <nav class='navbar bg-light'>
+    <div class='container-fluid'>
+      <a class='navbar-brand' href="{% url 'views_articles' %}">Index Page</a>
+      <span class="">SHUJIAN</span>
+      <div id=" auth-group" class="btn-group">
+        <span>Admin</span>
+      </div>
+    </div>
+  </nav>
+  <main>
+    <form id='post-form'>
+      <div class="mb-3">
+
+        <label for="exampleFormControlInput1" class="form-label">Article Title
+        </label>
+
+        <input type="text" name="title" class="form-control" required id="exampleFormControlInput1"
+          placeholder="article title">
+
+      </div>
+      <div class="mb-3">
+        <label for="exampleFormControlTextarea1" class="form-label">Article Content</label>
+        <textarea class="form-control" name="content" required id="exampleFormControlTextarea1"
+          placeholder='article-content' name='content' rows="5"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="formFileLg" class="form-label">Article Album</label>
+        <input class="form-control form-control-lg" required id="formFileLg" name='cover' type="file">
+      </div>
+      <div class="mb-3"><button class='w-100 btn btn-lg btn-primary' type='submit'>Post Article</button></div>
+    </form>
+  </main>
+
+</body>
+
+<!-- --------------------------------------------------------------------------------------------- -->
+
+<script>
+  const axiosWithAccessToken = async (url, method, access_token, data = {}) => {
+
+    console.log('data', data)
+
+    const res = await axios({
+      url,
+      method,
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/multipart/form-data;',
+      },
+      data
+    })
+    return res.status
+  }
+
+  const isTokenExpired = async (token) => {
+    try {
+      const res = await axios({
+        url: '{% url "token_verify" %}',
+        method: 'post',
+        data: { token }
+      })
+      if (res.status === 200) {
+        return false
+      } else {
+        return true
+      }
+    } catch (ignore) {
+      return true
+    }
+  }
+
+  const refreshAccessToken = async (refresh) => {
+    const accessRes = await axios({
+      url: '{% url "token_refresh" %}',
+      method: 'post',
+      data: { refresh }
+    })
+    return accessRes.access
+  }
+
+  const getAccessToken = async () => {
+    if (!!localStorage.access) {
+      const accessIsExpired = await isTokenExpired(localStorage.access)
+      console.log('accessIsExpired', accessIsExpired)
+      if (!accessIsExpired) {
+        return localStorage.access
+      } else {
+        if (!!localStorage.refresh) {
+          const refreshIsExpired = await isTokenExpired(localStorage.refresh)
+          console.log('refreshIsExpired', refreshIsExpired)
+          if (!refreshIsExpired) {
+            return refreshAccessToken(localStorage.refresh)
+          }
+        } else {
+          location.href = '{% url "views_login" %}'
+        }
+      }
+    } else {
+      location.href = '{% url "views_login" %}'
+    }
+  }
+
+  const postArticle = async () => {
+    const form = document.querySelector('#post-form')
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const title = document.querySelector('input[name=title]').value
+      const content = document.querySelector('textarea[name=content]').value
+      const cover = document.querySelector('input[name=cover]').files[0]
+
+      const formData = new FormData()
+      formData.append('title', title)
+      formData.append('content', content)
+      formData.append('cover', cover)
+
+      const access = await getAccessToken()
+      const status = await axiosWithAccessToken('{% url "article-list" %}', 'post', access, formData)
+      location.href = '{% url "views_articles" %}'
+    })
+  }
+
+  const main = async () => {
+    postArticle()
+  }
+
+  main()
+</script>
+
+</html>
